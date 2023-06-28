@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Convert Date from Gregorian to Hebrew. Enter a date and get its Hebrew equivalent."
+    />
+    <title>From Gregorian to Hebrew</title>
+    <style>
+      body {
+        font-size: 16px;
+        line-height: 1.5;
+        justify-content: center;
+        justify-content: center;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 95vh;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      input[type="date"] {
+        padding: 0.5rem;
+        border: 2px solid #ccc;
+        border-radius: 0.5rem;
+        font-size: 1.2rem;
+        width: 10rem;
+        margin-bottom: 1.5rem;
+      }
+
+      button {
+        font-size: 1rem;
+        padding: 0.5rem 2rem;
+        border: none;
+        box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        background: dodgerblue;
+        color: white;
+        border-radius: 0.5rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgb(0, 115, 255);
+      }
+
+      .hebrew-date {
+        font-size: 1.5rem;
+        border-radius: 5px;
+        position: fixed;
+        color: rgba(30, 144, 255, 1);
+        margin-top: 20%;
+      }
+
+      .popup {
+        position: fixed;
+        left: 50%;
+        top: 75%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        border-width: 5%;
+        border: solid #ccc;
+        border-radius: 5px;
+        color: red;
+        padding: 1%;
+        z-index: 9999;
+      }
+
+      .hebrew-animation {
+        animation: hebrewFadeIn 2s ease-in-out;
+      }
+
+      @keyframes hebrewFadeIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.2);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .he {
+        font-size: x-large;
+        margin-top: 2%;
+      }
+
+      .loader {
+        display: none;
+        width: 1rem;
+        height: 1rem;
+        margin-top: 20%;
+        margin-left: 15%;
+        border: 5px solid #f3f3f3;
+        border-top-color: dodgerblue;
+        position: absolute;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Convert Date from Gregorian to Hebrew</h1>
+      <input
+        type="date"
+        id="gregorianDate"
+        placeholder="Select a date"
+        max="9999-12-31"
+      />                                                           <!-- max date is 31/12/999 after that the api dosent work currectly -->
+                                                              
+      <button id="convertButton">Convert</button>
+      <p class="he">The Hebrew Date Is:</p>
+      <span id="hebrewDate"></span>
+      <div class="loader" id="loader"></div>
+    </div>
+
+    <script>
+      function convert() {
+        const gregorian = document.getElementById("gregorianDate").value;    //recive the date fron the input
+
+        if (!gregorian) {                                                    //if a date was not selected- pop up an error massage
+          clearHebrewDate();
+          displayError("Date not selected. Please select a date.");
+          return;
+        }
+
+                                         //this is the string with the currenct value of the chosen date that was insert in the input
+        const url = `https://www.hebcal.com/converter?cfg=json
+&gy=${gregorian.substring(0,4)}&gm=${gregorian.substring(5, 7)}&gd=${gregorian.substring(8)}`;
+              // year                                    month                              day
+              
+        clearHebrewDate();                                                  //clear the previous date
+        showLoader();                                                       //start the loader
+
+        fetch(url)                                                  //this is the fuction that call the API to recive the hebrew date
+          .then((res) => res.json())                                //then and catch take care of the asynchronous nature of the API
+          .then((data) => {
+            const hebrew = data.hebrew;
+            displayHebrewDate(hebrew);
+            removeLoader(1500);                                              // Hide the loader after 1.5 seconds (1500 milliseconds)
+          })
+          .catch((error) => {
+            displayError("Error occurred.");
+            removeLoader(3000);                                               // Hide the loader after 3 seconds (3000 milliseconds)
+          });
+      }
+
+      function clearHebrewDate() {                                         // function that clear the previous date
+        const hebrewDate = document.getElementById("hebrewDate");
+        hebrewDate.textContent = "";
+        hebrewDate.classList.remove("hebrew-animation");
+      }
+
+      function displayError(message) {                                    //function that appear if there is an error
+        const popup = document.createElement("div");
+        popup.classList.add("popup");
+        popup.textContent = message;
+        document.body.appendChild(popup);
+
+        setTimeout(function () {                                         //remove the pop up error message after 3 sec
+          popup.remove();
+        }, 3000);
+      }
+
+      function displayHebrewDate(hebrew) {
+        const hebrewDate = document.getElementById("hebrewDate");
+        hebrewDate.innerHTML = hebrew;
+        hebrewDate.classList.add("hebrew-animation");
+        hebrewDate.classList.add("hebrew-date");
+      }
+
+      function showLoader() {                                         //show the loader when the api call is happening
+        const loader = document.getElementById("loader");
+        loader.style.display = "block";
+      }
+
+      function removeLoader(delay) {                                    //remove the loader after the api call was made
+        setTimeout(function () {
+          const loader = document.getElementById("loader");
+          loader.style.display = "none";
+        }, delay);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {         //function to ensures that the "convert" function is executed only when the button is clicked,
+        const convertButton = document.getElementById("convertButton");   // rather than immediately when the JavaScript code is parsed.
+        convertButton.addEventListener("click", convert);
+      });
+    </script>
+  </body>
+</html>
